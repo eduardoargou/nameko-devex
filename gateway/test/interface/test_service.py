@@ -272,12 +272,11 @@ class TestCreateOrder(object):
         assert response.status_code == 400
         assert response.json()['error'] == 'VALIDATION_ERROR'
 
-#
     def test_create_order_fails_with_unknown_product(
         self, gateway_service, web_session
     ):
         # setup mock products-service response:
-        gateway_service.products_rpc.list.return_value = [
+        products = [
             {
                 'id': 'the_odyssey',
                 'title': 'The Odyssey',
@@ -293,6 +292,14 @@ class TestCreateOrder(object):
                 'passenger_capacity': 4
             },
         ]
+
+        def get_product(product_id):
+            for product in products:
+                if product['id'] == product_id:
+                    return product
+            raise ProductNotFound('missing')
+
+        gateway_service.products_rpc.get.side_effect = get_product
 
         # call the gateway service to create the order
         response = web_session.post(
